@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8">
     <title>A-Frame Local Video Example</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   </head>
@@ -9,64 +9,41 @@
     <a-scene>
       <!-- Load video asset -->
       <a-assets>
-        <video
-          id="testvideo"
-          src="test.mp4"
-          preload="auto"
-          loop
-          crossorigin="anonymous"
-          playsinline
-          webkit-playsinline
-        ></video>
+        <video id="testvideo" src="output.mp4" muted preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
 
       <!-- Video screen -->
-      <a-plane
+      <a-plane 
         src="#testvideo"
         position="0 2 -4"
-        width="4"
+        width="4" 
         height="2.25"
-        material="shader: flat"
-      >
+        material="shader: flat">
       </a-plane>
 
       <!-- Play button -->
-      <a-plane
-        position="0 0.8 -2"
-        width="1.5"
-        height="0.5"
-        color="green"
-        id="playButton"
-      >
-        <a-text
-          value="▶ PLAY VIDEO"
-          align="center"
-          position="0 0 0.1"
-          color="white"
-        ></a-text>
+      <a-plane position="0 0.8 -2" width="1.5" height="0.5" color="green" id="playButton">
+        <a-text value="▶ PLAY VIDEO" align="center" position="0 0 0.1" color="white"></a-text>
       </a-plane>
 
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
 
     <script>
-      const vid = document.querySelector("#testvideo");
-      const btn = document.querySelector("#playButton");
+      const vid = document.querySelector('#testvideo');
+      const btn = document.querySelector('#playButton');
 
-      btn.addEventListener("click", () => {
-        vid
-          .play()
-          .then(() => {
-            console.log("▶ Video started successfully");
-          })
-          .catch((err) => {
-            console.error("❌ Video play failed:", err);
-          });
+      btn.addEventListener('click', () => {
+        vid.play().then(() => {
+          console.log("▶ Video started successfully");
+        }).catch(err => {
+          console.error("❌ Video play failed:", err);
+        });
       });
 
-      vid.addEventListener("playing", () => console.log("🎥 Video is playing"));
-      vid.addEventListener("pause", () => console.log("⏸ Video is paused"));
-      vid.addEventListener("error", (e) => console.error("⚠️ Video error:", e));
+      vid.addEventListener('playing', () => console.log("🎥 Video is playing"));
+      vid.addEventListener('pause', () => console.log("⏸ Video is paused"));
+      vid.addEventListener('error', (e) => console.error("⚠️ Video error:", e));
     </script>
   </body>
 </html>
