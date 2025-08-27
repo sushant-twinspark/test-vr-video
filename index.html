@@ -2,48 +2,126 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame Local Video Example</title>
+    <title>A-Frame Local Video Example - Fixed</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   </head>
   <body>
     <a-scene>
       <!-- Load video asset -->
       <a-assets>
-        <video id="testvideo" src="output.mp4" muted preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video 
+          id="testvideo" 
+          src="output.mp4" 
+          muted 
+          preload="auto" 
+          loop 
+          crossorigin="anonymous" 
+          playsinline 
+          webkit-playsinline
+          width="640" 
+          height="360">
+        </video>
       </a-assets>
-
+      
       <!-- Video screen -->
       <a-plane 
-        src="#testvideo"
+        material="src: #testvideo; shader: flat"
         position="0 2 -4"
         width="4" 
-        height="2.25"
-        material="shader: flat">
+        height="2.25">
       </a-plane>
-
+      
       <!-- Play button -->
-      <a-plane position="0 0.8 -2" width="1.5" height="0.5" color="green" id="playButton">
+      <a-plane position="0 0.8 -2" width="1.5" height="0.5" color="green" id="playButton" class="clickable">
         <a-text value="▶ PLAY VIDEO" align="center" position="0 0 0.1" color="white"></a-text>
       </a-plane>
-
+      
+      <!-- Add cursor for interaction -->
+      <a-camera>
+        <a-cursor 
+          animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+          animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+          geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+          material="color: white; shader: flat"
+          raycaster="objects: .clickable">
+        </a-cursor>
+      </a-camera>
+      
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
 
     <script>
-      const vid = document.querySelector('#testvideo');
-      const btn = document.querySelector('#playButton');
-
-      btn.addEventListener('click', () => {
-        vid.play().then(() => {
-          console.log("▶ Video started successfully");
-        }).catch(err => {
-          console.error("❌ Video play failed:", err);
-        });
+      // Wait for A-Frame to load
+      document.addEventListener('DOMContentLoaded', function() {
+        const vid = document.querySelector('#testvideo');
+        const btn = document.querySelector('#playButton');
+        const scene = document.querySelector('a-scene');
+        
+        // Ensure scene is loaded
+        if (scene.hasLoaded) {
+          init();
+        } else {
+          scene.addEventListener('loaded', init);
+        }
+        
+        function init() {
+          console.log('🎬 A-Frame scene loaded, setting up video...');
+          
+          // Add click listener to play button
+          btn.addEventListener('click', function() {
+            console.log('🖱️ Play button clicked');
+            playVideo();
+          });
+          
+          // Also listen for cursor-based clicks (VR interaction)
+          btn.addEventListener('mousedown', function() {
+            console.log('👆 Play button activated via cursor');
+            playVideo();
+          });
+          
+          function playVideo() {
+            if (vid.paused) {
+              vid.play().then(() => {
+                console.log("▶️ Video started successfully");
+                // Hide play button when video starts
+                btn.setAttribute('visible', 'false');
+              }).catch(err => {
+                console.error("❌ Video play failed:", err);
+                // Show user-friendly error
+                alert('Video failed to play. Please check if test.mp4 exists and is accessible.');
+              });
+            }
+          }
+          
+          // Video event listeners
+          vid.addEventListener('loadstart', () => console.log("📁 Video loading started"));
+          vid.addEventListener('loadedmetadata', () => console.log("📋 Video metadata loaded"));
+          vid.addEventListener('canplay', () => console.log("✅ Video can start playing"));
+          vid.addEventListener('playing', () => {
+            console.log("🎥 Video is playing");
+            btn.setAttribute('visible', 'false');
+          });
+          vid.addEventListener('pause', () => {
+            console.log("⏸️ Video is paused");
+            btn.setAttribute('visible', 'true');
+          });
+          vid.addEventListener('ended', () => {
+            console.log("🏁 Video ended");
+            btn.setAttribute('visible', 'true');
+          });
+          vid.addEventListener('error', (e) => {
+            console.error("⚠️ Video error:", e);
+            console.error("Error details:", vid.error);
+          });
+          
+          // Check if video loads properly
+          setTimeout(() => {
+            if (vid.readyState === 0) {
+              console.error("⚠️ Video may not be loading. Check file path and format.");
+            }
+          }, 2000);
+        }
       });
-
-      vid.addEventListener('playing', () => console.log("🎥 Video is playing"));
-      vid.addEventListener('pause', () => console.log("⏸ Video is paused"));
-      vid.addEventListener('error', (e) => console.error("⚠️ Video error:", e));
     </script>
   </body>
 </html>
