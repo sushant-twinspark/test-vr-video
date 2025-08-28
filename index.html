@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Advanced A-Frame VR Video Player</title>
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <style>
+      body { margin: 0; font-family: Arial, sans-serif; }
+      .fullscreen-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 999;
+        background: #333;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .fullscreen-btn:hover { background: #555; }
+    </style>
+  </head>
+  <body>
+    <!-- Desktop fullscreen button -->
+    <button class="fullscreen-btn" id="fullscreenBtn">⛶ Fullscreen</button>
+
+    <a-scene background="color: #1a1a2e" vr-mode-ui="enabled: true">
+      <!-- Assets -->
+      <a-assets>
+        <video 
+          id="mainVideo" 
+          src="output.mp4" 
+          muted 
+          preload="auto" 
+          loop 
+          crossorigin="anonymous" 
+          playsinline 
+          webkit-playsinline
+          width="1920" 
+          height="1080">
+        </video>
+      </a-assets>
+
+      <!-- Video Player Entity -->
+      <a-entity id="videoPlayer" position="0 2 -5">
+        
+        <!-- Main Video Screen -->
+        <a-plane 
+          id="videoScreen"
+          material="src: #mainVideo; shader: flat; transparent: true"
+          position="0 0 0"
+          width="8" 
+          height="4.5"
+          class="clickable">
+        </a-plane>
+
+        <!-- Control Panel Background -->
+        <a-plane 
+          id="controlPanel"
+          position="0 -2.8 0.01"
+          width="8.4" 
+          height="0.8"
+          color="#000000"
+          opacity="0.8"
+          material="transparent: true"
+          class="clickable">
+        </a-plane>
+
+        <!-- Play/Pause Button -->
+        <a-plane 
+          id="playPauseBtn"
+          position="-3.5 -2.8 0.02"
+          width="0.6" 
+          height="0.6"
+          color="#4CAF50"
+          class="clickable">
+          <a-text 
+            id="playPauseText"
+            value="▶"
+            align="center"
+            position="0 0 0.01"
+            color="white"
+            width="8">
+          </a-text>
+        </a-plane>
+
+        <!-- Progress Bar Background -->
+        <a-plane 
+          id="progressBg"
+          position="-0.5 -2.8 0.02"
+          width="5" 
+          height="0.15"
+          color="#333333"
+          class="clickable">
+        </a-plane>
+
+        <!-- Progress Bar Fill -->
+        <a-plane 
+          id="progressFill"
+          position="-2.5 -2.8 0.03"
+          width="0" 
+          height="0.15"
+          color="#FF4444">
+        </a-plane>
+
+        <!-- Time Display -->
+        <a-text 
+          id="timeDisplay"
+          value="00:00 / 00:00"
+          position="2.8 -2.8 0.02"
+          color="white"
+          width="4"
+          align="left">
+        </a-text>
+
+        <!-- Volume Control -->
+        <a-plane 
+          id="volumeBtn"
+          position="-2.8 -2.8 0.02"
+          width="0.5" 
+          height="0.5"
+          color="#2196F3"
+          class="clickable">
+          <a-text 
+            id="volumeText"
+            value="🔊"
+            align="center"
+            position="0 0 0.01"
+            color="white"
+            width="6">
+          </a-text>
+        </a-plane>
+
+        <!-- Fullscreen Button -->
+        <a-plane 
+          id="vrFullscreenBtn"
+          position="3.5 -2.8 0.02"
+          width="0.6" 
+          height="0.6"
+          color="#9C27B0"
+          class="clickable">
+          <a-text 
+            value="⛶"
+            align="center"
+            position="0 0 0.01"
+            color="white"
+            width="6">
+          </a-text>
+        </a-plane>
+
+        <!-- Loading Indicator -->
+        <a-text 
+          id="loadingText"
+          value="Loading video..."
+          position="0 0 0.1"
+          color="#FFD700"
+          align="center"
+          width="6"
+          visible="true">
+        </a-text>
+
+      </a-entity>
+
+      <!-- VR Controllers and Camera -->
+      <a-entity id="cameraRig" position="0 1.6 3">
+        <a-camera>
+          <a-cursor 
+            animation__click="property: scale; startEvents: click; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+            animation__mouseenter="property: scale; startEvents: mouseenter; dur: 300; to: 1.2 1.2 1.2"
+            animation__mouseleave="property: scale; startEvents: mouseleave; dur: 300; to: 1 1 1"
+            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
+            material="color: #FFD700; shader: flat"
+            raycaster="objects: .clickable; far: 20">
+          </a-cursor>
+        </a-camera>
+        
+        <!-- Left Controller -->
+        <a-entity 
+          id="leftController"
+          hand-controls="hand: left"
+          laser-controls="hand: left"
+          raycaster="objects: .clickable; far: 20">
+        </a-entity>
+        
+        <!-- Right Controller -->
+        <a-entity 
+          id="rightController"
+          hand-controls="hand: right"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable; far: 20">
+        </a-entity>
+      </a-entity>
+
+      <!-- Environment -->
+      <a-sky color="#0f0f23"></a-sky>
+      <a-plane position="0 0 -8" rotation="-90 0 0" width="20" height="20" color="#1a1a2e"></a-plane>
+    </a-scene>
+
+    <script>
+      class VRVideoPlayer {
+        constructor() {
+          this.video = null;
+          this.isPlaying = false;
+          this.isMuted = true;
+          this.currentTime = 0;
+          this.duration = 0;
+          this.isFullscreen = false;
+          
+          this.init();
+        }
+
+        init() {
+          // Wait for scene to load
+          const scene = document.querySelector('a-scene');
+          if (scene.hasLoaded) {
+            this.setupPlayer();
+          } else {
+            scene.addEventListener('loaded', () => this.setupPlayer());
+          }
+        }
+
+        setupPlayer() {
+          this.video = document.querySelector('#mainVideo');
+          this.setupEventListeners();
+          this.setupVideoEvents();
+          this.hideLoadingText();
+        }
+
+        setupEventListeners() {
+          // Play/Pause button
+          document.querySelector('#playPauseBtn').addEventListener('click', () => this.togglePlayPause());
+          
+          // Video screen click (play/pause)
+          document.querySelector('#videoScreen').addEventListener('click', () => this.togglePlayPause());
+          
+          // Volume button
+          document.querySelector('#volumeBtn').addEventListener('click', () => this.toggleMute());
+          
+          // Progress bar
+          document.querySelector('#progressBg').addEventListener('click', (e) => this.seekVideo(e));
+          
+          // Fullscreen buttons
+          document.querySelector('#vrFullscreenBtn').addEventListener('click', () => this.toggleVRFullscreen());
+          document.querySelector('#fullscreenBtn').addEventListener('click', () => this.toggleBrowserFullscreen());
+
+          // VR Controller events
+          ['leftController', 'rightController'].forEach(controllerId => {
+            const controller = document.querySelector(`#${controllerId}`);
+            if (controller) {
+              controller.addEventListener('triggerdown', (e) => {
+                const intersected = e.target.components.raycaster.intersectedEls[0];
+                if (intersected && intersected.classList.contains('clickable')) {
+                  intersected.emit('click');
+                }
+              });
+            }
+          });
+        }
+
+        setupVideoEvents() {
+          this.video.addEventListener('loadedmetadata', () => {
+            this.duration = this.video.duration;
+            console.log('📋 Video metadata loaded, duration:', this.formatTime(this.duration));
+          });
+
+          this.video.addEventListener('timeupdate', () => {
+            this.currentTime = this.video.currentTime;
+            this.updateProgressBar();
+            this.updateTimeDisplay();
+          });
+
+          this.video.addEventListener('canplay', () => {
+            console.log('✅ Video ready to play');
+            this.hideLoadingText();
+          });
+
+          this.video.addEventListener('waiting', () => {
+            this.showLoadingText();
+          });
+
+          this.video.addEventListener('playing', () => {
+            this.hideLoadingText();
+          });
+
+          this.video.addEventListener('error', (e) => {
+            console.error('❌ Video error:', this.video.error);
+            this.showError();
+          });
+        }
+
+        togglePlayPause() {
+          if (this.video.paused) {
+            this.video.play().then(() => {
+              this.isPlaying = true;
+              this.updatePlayButton();
+              console.log('▶️ Video playing');
+            }).catch(err => {
+              console.error('❌ Play failed:', err);
+            });
+          } else {
+            this.video.pause();
+            this.isPlaying = false;
+            this.updatePlayButton();
+            console.log('⏸️ Video paused');
+          }
+        }
+
+        toggleMute() {
+          this.video.muted = !this.video.muted;
+          this.isMuted = this.video.muted;
+          this.updateVolumeButton();
+          console.log(this.isMuted ? '🔇 Muted' : '🔊 Unmuted');
+        }
+
+        seekVideo(event) {
+          const progressBar = document.querySelector('#progressBg');
+          const rect = progressBar.getBoundingClientRect();
+          // For VR, we'll use a simpler approach based on the progress bar width
+          const progressWidth = 5; // width of progress bar
+          const clickPosition = 0.5; // approximate middle for VR
+          const seekTime = (clickPosition * this.duration);
+          
+          this.video.currentTime = seekTime;
+          console.log('⏭️ Seeked to:', this.formatTime(seekTime));
+        }
+
+        toggleVRFullscreen() {
+          const videoScreen = document.querySelector('#videoScreen');
+          if (!this.isFullscreen) {
+            // Expand to fullscreen in VR
+            videoScreen.setAttribute('width', '16');
+            videoScreen.setAttribute('height', '9');
+            videoScreen.setAttribute('position', '0 0 -2');
+            this.isFullscreen = true;
+            console.log('🔳 VR Fullscreen ON');
+          } else {
+            // Return to normal size
+            videoScreen.setAttribute('width', '8');
+            videoScreen.setAttribute('height', '4.5');
+            videoScreen.setAttribute('position', '0 0 0');
+            this.isFullscreen = false;
+            console.log('🔲 VR Fullscreen OFF');
+          }
+        }
+
+        toggleBrowserFullscreen() {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().then(() => {
+              document.querySelector('#fullscreenBtn').textContent = '🗗 Exit';
+              console.log('🖥️ Browser fullscreen ON');
+            });
+          } else {
+            document.exitFullscreen().then(() => {
+              document.querySelector('#fullscreenBtn').textContent = '⛶ Fullscreen';
+              console.log('🖥️ Browser fullscreen OFF');
+            });
+          }
+        }
+
+        updatePlayButton() {
+          const playText = document.querySelector('#playPauseText');
+          playText.setAttribute('value', this.isPlaying ? '⏸' : '▶');
+        }
+
+        updateVolumeButton() {
+          const volumeText = document.querySelector('#volumeText');
+          volumeText.setAttribute('value', this.isMuted ? '🔇' : '🔊');
+        }
+
+        updateProgressBar() {
+          if (this.duration > 0) {
+            const progress = (this.currentTime / this.duration) * 5; // 5 is the width of progress bar
+            const progressFill = document.querySelector('#progressFill');
+            progressFill.setAttribute('width', progress);
+            progressFill.setAttribute('position', `${-2.5 + progress/2} -2.8 0.03`);
+          }
+        }
+
+        updateTimeDisplay() {
+          const timeDisplay = document.querySelector('#timeDisplay');
+          const current = this.formatTime(this.currentTime);
+          const total = this.formatTime(this.duration);
+          timeDisplay.setAttribute('value', `${current} / ${total}`);
+        }
+
+        formatTime(seconds) {
+          const mins = Math.floor(seconds / 60);
+          const secs = Math.floor(seconds % 60);
+          return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        showLoadingText() {
+          document.querySelector('#loadingText').setAttribute('visible', 'true');
+        }
+
+        hideLoadingText() {
+          document.querySelector('#loadingText').setAttribute('visible', 'false');
+        }
+
+        showError() {
+          const loadingText = document.querySelector('#loadingText');
+          loadingText.setAttribute('value', 'Error loading video!');
+          loadingText.setAttribute('color', '#FF4444');
+          loadingText.setAttribute('visible', 'true');
+        }
+
+        // Public methods for external control
+        play() { this.togglePlayPause(); }
+        pause() { this.video.pause(); }
+        setTime(time) { this.video.currentTime = time; }
+        setVolume(volume) { this.video.volume = volume; }
+      }
+
+      // Initialize the video player
+      let videoPlayer;
+      document.addEventListener('DOMContentLoaded', () => {
+        videoPlayer = new VRVideoPlayer();
+        
+        // Make it globally accessible
+        window.vrVideoPlayer = videoPlayer;
+        
+        console.log('🎬 VR Video Player initialized');
+        console.log('💡 Usage: window.vrVideoPlayer.play(), .pause(), .setTime(seconds), etc.');
+      });
+    </script>
+  </body>
+</html>
