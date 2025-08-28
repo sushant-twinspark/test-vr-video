@@ -56,104 +56,109 @@
           class="clickable">
         </a-plane>
 
-        <!-- Control Panel Background -->
-        <a-plane 
-          id="controlPanel"
-          position="0 -2.5 0.1"
-          width="8.4" 
-          height="1"
-          color="#000000"
-          opacity="0.9"
-          material="transparent: true"
-          class="clickable">
-        </a-plane>
+        <!-- Control Panel Entity - Single movable unit -->
+        <a-entity id="controlPanelEntity" position="0 -2.5 0.1">
+          
+          <!-- Control Panel Background -->
+          <a-plane 
+            id="controlPanel"
+            position="0 0 0"
+            width="8.4" 
+            height="1"
+            color="#000000"
+            opacity="0.9"
+            material="transparent: true"
+            class="clickable">
+          </a-plane>
 
-        <!-- Play/Pause Button -->
-        <a-plane 
-          id="playPauseBtn"
-          position="-3.5 -2.5 0.11"
-          width="0.8" 
-          height="0.8"
-          color="#4CAF50"
-          material="transparent: false"
-          class="clickable">
+          <!-- Play/Pause Button -->
+          <a-plane 
+            id="playPauseBtn"
+            position="-3.5 0 0.01"
+            width="0.8" 
+            height="0.8"
+            color="#4CAF50"
+            material="transparent: false"
+            class="clickable">
+            <a-text 
+              id="playPauseText"
+              value="▶"
+              align="center"
+              position="0 0 0.01"
+              color="white"
+              width="10">
+            </a-text>
+          </a-plane>
+
+          <!-- Volume Control -->
+          <a-plane 
+            id="volumeBtn"
+            position="-2.8 0 0.01"
+            width="0.7" 
+            height="0.7"
+            color="#2196F3"
+            material="transparent: false"
+            class="clickable">
+            <a-text 
+              id="volumeText"
+              value="🔊"
+              align="center"
+              position="0 0 0.01"
+              color="white"
+              width="8">
+            </a-text>
+          </a-plane>
+
+          <!-- Progress Bar Background -->
+          <a-plane 
+            id="progressBg"
+            position="-0.5 0 0.01"
+            width="5" 
+            height="0.2"
+            color="#555555"
+            material="transparent: false"
+            class="clickable">
+          </a-plane>
+
+          <!-- Progress Bar Fill -->
+          <a-plane 
+            id="progressFill"
+            position="-2.5 0 0.02"
+            width="0" 
+            height="0.2"
+            color="#FF4444"
+            material="transparent: false">
+          </a-plane>
+
+          <!-- Time Display -->
           <a-text 
-            id="playPauseText"
-            value="▶"
-            align="center"
-            position="0 0 0.01"
+            id="timeDisplay"
+            value="00:00 / 00:00"
+            position="2.8 0 0.01"
             color="white"
-            width="10">
+            width="6"
+            align="left">
           </a-text>
-        </a-plane>
 
-        <!-- Progress Bar Background -->
-        <a-plane 
-          id="progressBg"
-          position="-0.5 -2.5 0.11"
-          width="5" 
-          height="0.2"
-          color="#555555"
-          material="transparent: false"
-          class="clickable">
-        </a-plane>
+          <!-- Fullscreen Button -->
+          <a-plane 
+            id="vrFullscreenBtn"
+            position="3.5 0 0.01"
+            width="0.8" 
+            height="0.8"
+            color="#9C27B0"
+            material="transparent: false"
+            class="clickable">
+            <a-text 
+              value="⛶"
+              align="center"
+              position="0 0 0.01"
+              color="white"
+              width="8">
+            </a-text>
+          </a-plane>
 
-        <!-- Progress Bar Fill -->
-        <a-plane 
-          id="progressFill"
-          position="-2.5 -2.5 0.12"
-          width="0" 
-          height="0.2"
-          color="#FF4444"
-          material="transparent: false">
-        </a-plane>
-
-        <!-- Time Display -->
-        <a-text 
-          id="timeDisplay"
-          value="00:00 / 00:00"
-          position="2.8 -2.5 0.11"
-          color="white"
-          width="6"
-          align="left">
-        </a-text>
-
-        <!-- Volume Control -->
-        <a-plane 
-          id="volumeBtn"
-          position="-2.8 -2.5 0.11"
-          width="0.7" 
-          height="0.7"
-          color="#2196F3"
-          material="transparent: false"
-          class="clickable">
-          <a-text 
-            id="volumeText"
-            value="🔊"
-            align="center"
-            position="0 0 0.01"
-            color="white"
-            width="8">
-          </a-text>
-        </a-plane>
-
-        <!-- Fullscreen Button -->
-        <a-plane 
-          id="vrFullscreenBtn"
-          position="3.5 -2.5 0.11"
-          width="0.8" 
-          height="0.8"
-          color="#9C27B0"
-          material="transparent: false"
-          class="clickable">
-          <a-text 
-            value="⛶"
-            align="center"
-            position="0 0 0.01"
-            color="white"
-            width="8">
-          </a-text>
-        </a-plane>
+        </a-entity>
 
         <!-- Debug Visibility Helper -->
         <a-box 
@@ -395,7 +400,7 @@
             const progress = (this.currentTime / this.duration) * 5; // 5 is the width of progress bar
             const progressFill = document.querySelector('#progressFill');
             progressFill.setAttribute('width', progress);
-            progressFill.setAttribute('position', `${-2.5 + progress/2} -2.5 0.12`);
+            progressFill.setAttribute('position', `${-2.5 + progress/2} 0 0.02`);
           }
         }
 
@@ -427,11 +432,19 @@
           loadingText.setAttribute('visible', 'true');
         }
 
-        // Public methods for external control
-        play() { this.togglePlayPause(); }
-        pause() { this.video.pause(); }
-        setTime(time) { this.video.currentTime = time; }
-        setVolume(volume) { this.video.volume = volume; }
+        // Public method to move control panel
+        moveControlPanel(x, y, z) {
+          document.querySelector('#controlPanelEntity').setAttribute('position', `${x} ${y} ${z}`);
+        }
+
+        // Public method to show/hide controls
+        showControls() {
+          document.querySelector('#controlPanelEntity').setAttribute('visible', 'true');
+        }
+
+        hideControls() {
+          document.querySelector('#controlPanelEntity').setAttribute('visible', 'false');
+        }
       }
 
       // Initialize the video player
